@@ -1,0 +1,85 @@
+[
+  {
+    "id": "7d06c14e-742a-4b3f-ab10-f6d7ce88d46d",
+    "status": "succeeded",
+    "started_at": "2026-06-10T08:53:18Z",
+    "finished_at": "2026-06-10T08:53:19Z",
+    "metrics": {
+      "rmse": 0.8754141932612736,
+      "mae": 0.6743555045832381
+    },
+    "config": {
+      "test_size": 0.2,
+      "random_state": 42,
+      "min_ratings_per_user": 20,
+      "data_source": "csv",
+      "data_warning": "Database unavailable, using CSV files instead: failed to resolve host 'ep-withered-cherry-aphrfjmp-pooler.c-7.us-east-1.aws.neon.tech': [Errno 8] nodename nor servname provided, or not known",
+      "saved_rating_count": 1,
+      "training_rating_count": 100837
+    },
+    "model_path": "/Users/pham.quang.nam/Documents/AI/model/svd_model.pkl"
+  },
+  {
+    "id": "fe80a8f3-006b-45cf-a78c-0f8bf0120cc9",
+    "status": "succeeded",
+    "started_at": "2026-06-10T08:53:54Z",
+    "finished_at": "2026-06-10T08:53:54Z",
+    "metrics": {
+      "rmse": 0.8754141932612736,
+      "mae": 0.6743555045832381
+    },
+    "config": {
+      "test_size": 0.2,
+      "random_state": 42,
+      "min_ratings_per_user": 20,
+      "max_rmse": 1.2,
+      "data_source": "csv",
+      "data_warning": "Database unavailable, using CSV files instead: failed to resolve host 'ep-withered-cherry-aphrfjmp-pooler.c-7.us-east-1.aws.neon.tech': [Errno 8] nodename nor servname provided, or not known",
+      "saved_rating_count": 1,
+      "training_rating_count": 100837
+    },
+    "model_path": "/Users/pham.quang.nam/Documents/AI/model/svd_model.pkl"
+  },
+  {
+    "id": "e7bad42e-cda9-410d-a4e3-62f9f5f4adfa",
+    "status": "succeeded",
+    "started_at": "2026-06-10T09:20:18Z",
+    "finished_at": "2026-06-10T09:20:22Z",
+    "metrics": {
+      "rmse": 0.8754141932612736,
+      "mae": 0.6743555045832381
+    },
+    "config": {
+      "test_size": 0.2,
+      "random_state": 42,
+      "min_ratings_per_user": 20,
+      "max_rmse": 1.2,
+      "data_source": "csv",
+      "data_warning": "Database returned no MovieLens-compatible movies or ratings.",
+      "saved_rating_count": 1,
+      "training_rating_count": 100837
+    },
+    "model_path": "/Users/pham.quang.nam/Documents/AI/model/svd_model.pkl"
+  },
+  {
+    "id": "228853fa-adf9-47f2-85a8-61bbed96ec3f",
+    "status": "succeeded",
+    "started_at": "2026-06-14T13:34:24Z",
+    "finished_at": "2026-06-14T13:34:25Z",
+    "metrics": {
+      "rmse": 0.8754141932612736,
+      "mae": 0.6743555045832381
+    },
+    "config": {
+      "test_size": 0.2,
+      "random_state": 42,
+      "min_ratings_per_user": 20,
+      "max_rmse": 1.2,
+      "data_source": "csv",
+      "data_warning": "Database unavailable, using CSV files instead: failed to resolve host 'ep-withered-cherry-aphrfjmp-pooler.c-7.us-east-1.aws.neon.tech': [Errno 8] nodename nor servname provided, or not known",
+      "saved_rating_count": 1,
+      "training_rating_count": 100837
+    },
+    "model_path": "/Users/pham.quang.nam/Documents/AI/model/svd_model.pkl"
+  }
+]

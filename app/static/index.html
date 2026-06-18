@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Movie Recommender</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main>
+      <section id="auth-view" class="auth-view">
+        <div class="auth-shell">
+          <section class="auth-copy" aria-label="Product overview">
+            <p class="eyebrow">MovieLens intelligence</p>
+            <h1>Movie Recommender</h1>
+            <p class="lede">Personalized movie picks powered by collaborative filtering, live ratings, and retrainable model artifacts.</p>
+            <div class="auth-metrics" aria-label="System highlights">
+              <div>
+                <strong>SVD</strong>
+                <span>Algorithm</span>
+              </div>
+              <div>
+                <strong id="auth-rmse">--</strong>
+                <span>RMSE</span>
+              </div>
+              <div>
+                <strong id="auth-source">--</strong>
+                <span>Source</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="auth-card" aria-label="Authentication">
+            <div>
+              <p class="eyebrow">Account</p>
+              <h2 id="auth-title">Sign in</h2>
+            </div>
+
+            <div class="auth-tabs" role="tablist" aria-label="Auth mode">
+              <button id="login-tab" class="auth-tab active" type="button">Login</button>
+              <button id="register-tab" class="auth-tab" type="button">Register</button>
+            </div>
+
+            <form id="auth-form" class="auth-form">
+              <label>
+                <span>Username</span>
+                <input id="auth-username" name="username" autocomplete="username" required>
+              </label>
+              <label>
+                <span>Password</span>
+                <input id="auth-password" name="password" type="password" autocomplete="current-password" required>
+              </label>
+              <button id="auth-submit" class="primary-action" type="submit">Login</button>
+            </form>
+
+            <p id="auth-message" class="form-message" role="status"></p>
+          </section>
+        </div>
+      </section>
+
+      <section id="app-view" class="app-view" hidden>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">MovieLens intelligence</p>
+            <h1>Movie Recommender</h1>
+          </div>
+          <div class="account-card">
+            <div>
+              <span>Signed in</span>
+              <strong id="account-name">--</strong>
+            </div>
+            <button id="logout-button" class="icon-action" type="button">Logout</button>
+          </div>
+        </header>
+
+        <section class="workspace">
+          <aside class="panel">
+            <div class="model-chip" id="model-chip">Model loading</div>
+
+            <form id="recommendation-form" class="controls">
+              <label>
+                <span>Top movies</span>
+                <input id="top-n" name="top_n" type="range" min="5" max="20" value="10">
+                <output id="top-n-output" for="top-n">10</output>
+              </label>
+
+              <button class="primary-action" type="submit">
+                <span aria-hidden="true">↻</span>
+                Recommend
+              </button>
+
+              <button id="train-button" class="secondary-action" type="button">
+                <span aria-hidden="true">●</span>
+                Retrain model
+              </button>
+            </form>
+
+            <div class="stats" aria-label="Dataset summary">
+              <div>
+                <strong id="movie-count">--</strong>
+                <span>Movies</span>
+              </div>
+              <div>
+                <strong id="user-count">--</strong>
+                <span>Users</span>
+              </div>
+              <div>
+                <strong id="rating-count">--</strong>
+                <span>Ratings</span>
+              </div>
+              <div>
+                <strong id="rmse">--</strong>
+                <span>RMSE</span>
+              </div>
+              <div>
+                <strong id="data-source">--</strong>
+                <span>Source</span>
+              </div>
+              <div>
+                <strong id="algorithm">SVD</strong>
+                <span>Algorithm</span>
+              </div>
+            </div>
+
+            <div class="notice" id="data-warning" hidden></div>
+            <div class="train-run" id="train-run" hidden></div>
+
+            <div class="rating-strip" aria-label="Rating scale">
+              <span>0.5</span>
+              <div></div>
+              <span>5.0</span>
+            </div>
+          </aside>
+
+          <section class="results">
+            <div class="results-header">
+              <div>
+                <p class="eyebrow">Recommendations</p>
+                <h2 id="results-title">Top picks</h2>
+                <p id="strategy-label" class="strategy-label">SVD collaborative filtering</p>
+              </div>
+              <div id="status" class="status">Ready</div>
+            </div>
+
+            <div id="recommendations" class="recommendation-grid" aria-live="polite"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

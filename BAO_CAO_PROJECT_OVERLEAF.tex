@@ -1,0 +1,553 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{pgfplots}
+
+\pgfplotsset{compat=1.18}
+
+\geometry{
+    left=3cm,
+    right=2cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+\onehalfspacing
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red!60!black},
+    commentstyle=\color{green!40!black},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    tabsize=4
+}
+
+\begin{document}
+
+% ===================== TRANG BIA =====================
+\begin{titlepage}
+    \begin{center}
+        \textbf{\large ĐẠI HỌC BÁCH KHOA HÀ NỘI}\\
+        \textbf{\large TRƯỜNG CÔNG NGHỆ THÔNG TIN \& TRUYỀN THÔNG}\\
+        \vspace{1.5cm}
+
+        \includegraphics[width=4cm]{logo.jpg}\\
+        \vspace{1.5cm}
+
+        \textbf{\Large BÁO CÁO PROJECT}\\
+        \vspace{0.5cm}
+        \textbf{\LARGE HỆ THỐNG GỢI Ý PHIM}\\
+        \vspace{0.3cm}
+        \textbf{\Large SVD CÀI ĐẶT THỦ CÔNG TỪ MA TRẬN RATING}\\
+
+        \vspace{1.5cm}
+        \begin{tabular}{rll}
+            \textbf{Môn học :} & \multicolumn{2}{l}{Nhập môn trí tuệ nhân tạo} \\
+            \textbf{Mã lớp :} & \multicolumn{2}{l}{\textit{166157}} \\
+            \textbf{Đề tài :} & \multicolumn{2}{l}{Xây dựng hệ thống gợi ý phim} \\
+            \textbf{Sinh viên thực hiện :} & Phạm Quang Nam & 20235792 \\
+            & Phạm Hải Nam & 20235791 \\
+            & Vũ Huy Hoàng & 20235732 \\
+            \textbf{Giảng viên hướng dẫn :} & \multicolumn{2}{l}{\textit{TS. Đỗ Tiến Dũng}} \\
+        \end{tabular}
+
+        \vfill
+        \textbf{Hà Nội, tháng 06 năm 2026}
+    \end{center}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ===================== NOI DUNG =====================
+\section{Giới thiệu đề tài}
+
+Dự án xây dựng một hệ thống gợi ý phim dựa trên bộ dữ liệu MovieLens. Hệ thống cho phép người dùng đăng nhập, xem danh sách phim được đề xuất, chấm điểm phim và nhận lại danh sách gợi ý mới dựa trên các đánh giá vừa phát sinh.
+
+Mục tiêu chính của dự án là vận dụng kiến thức về học máy, lọc cộng tác và hệ thống gợi ý để dự đoán mức độ yêu thích của người dùng đối với những bộ phim chưa xem. Trọng tâm thuật toán của project là phần \texttt{ManualSVD}, trong đó thuật toán SVD/matrix factorization được cài đặt thủ công từ ma trận rating cơ sở. Ngoài ra, project vẫn có phiên bản dùng thư viện \texttt{scikit-surprise} để chạy ứng dụng chính và đối chiếu kết quả với K-NN.
+
+\section{Cấu trúc project}
+
+Dự án được tổ chức thành các thành phần chính sau:
+
+\begin{itemize}
+    \item \texttt{app/server.py}: Xây dựng web server và các API cho giao diện người dùng.
+    \item \texttt{app/services/data\_loader.py}: Đọc dữ liệu phim, rating và kiểm tra dữ liệu đầu vào.
+    \item \texttt{app/services/manual\_svd.py}: Cài đặt thủ công thuật toán SVD/matrix factorization.
+    \item \texttt{app/services/manual\_svd\_demo.py}: Demo huấn luyện và đánh giá bản SVD tự cài đặt.
+    \item \texttt{app/services/trainer.py}: Huấn luyện mô hình SVD tối ưu bằng thư viện và lưu model.
+    \item \texttt{app/services/recommender.py}: Sinh danh sách phim gợi ý cho từng người dùng.
+    \item \texttt{app/services/compare\_algorithms.py}: So sánh SVD với Item-based K-NN.
+    \item \texttt{app/static/}: Chứa giao diện web gồm HTML, CSS và JavaScript.
+    \item \texttt{data/}: Chứa dữ liệu MovieLens và dữ liệu rating người dùng phát sinh.
+    \item \texttt{model/}: Chứa file mô hình đã huấn luyện \texttt{svd\_model.pkl}.
+\end{itemize}
+
+\section{Dữ liệu sử dụng}
+
+Dự án sử dụng bộ dữ liệu MovieLens small, một bộ dữ liệu phổ biến trong các bài toán hệ thống gợi ý. Hai file dữ liệu chính gồm:
+
+\begin{itemize}
+    \item \texttt{movies.csv}: Danh sách phim, gồm \texttt{movieId}, \texttt{title}, \texttt{genres}.
+    \item \texttt{ratings.csv}: Dữ liệu đánh giá phim, gồm \texttt{userId}, \texttt{movieId}, \texttt{rating}, \texttt{timestamp}.
+\end{itemize}
+
+Kết quả kiểm tra dữ liệu trong project:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lr}
+        \toprule
+        \textbf{Thành phần} & \textbf{Số lượng} \\
+        \midrule
+        Số phim & 9,742 \\
+        Số rating & 100,837 \\
+        Số user sau khi load dữ liệu & 611 \\
+        Thang điểm rating & 0.5 đến 5.0 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Thống kê dữ liệu sử dụng trong project}
+\end{table}
+
+Trước khi huấn luyện, hệ thống chỉ giữ lại những người dùng có ít nhất 20 lượt đánh giá. Bước tiền xử lý này giúp giảm nhiễu từ các người dùng có quá ít dữ liệu và giúp mô hình lọc cộng tác học được các đặc trưng ổn định hơn.
+
+\section{Phương pháp thực hiện}
+
+\subsection{Bài toán gợi ý phim}
+
+Bài toán được mô hình hóa dưới dạng ma trận User--Movie. Trong ma trận này, mỗi dòng tương ứng với một người dùng, mỗi cột tương ứng với một bộ phim, còn mỗi ô biểu diễn điểm đánh giá mà người dùng đã chấm cho bộ phim đó. Vì mỗi người dùng chỉ đánh giá một phần rất nhỏ trong toàn bộ danh sách phim, ma trận rating có tính thưa cao.
+
+Mục tiêu của hệ thống là dự đoán rating còn thiếu:
+
+\[
+\hat{r}_{ui} = f(u, i)
+\]
+
+Trong đó:
+
+\begin{itemize}
+    \item \(u\): người dùng.
+    \item \(i\): phim.
+    \item \(\hat{r}_{ui}\): rating dự đoán của người dùng \(u\) cho phim \(i\).
+\end{itemize}
+
+Sau khi dự đoán rating cho các phim người dùng chưa xem, hệ thống sắp xếp giảm dần theo rating dự đoán và trả về Top-N phim phù hợp nhất.
+
+\subsection{SVD cài đặt thủ công từ ma trận rating}
+
+Trong project, phần thuật toán cốt lõi được cài đặt trong file \texttt{app/services/manual\_svd.py}. Đây là phiên bản matrix factorization tự xây dựng để minh họa rõ cách học từ ma trận rating ban đầu.
+
+Ma trận rating có dạng:
+
+\[
+R =
+\begin{bmatrix}
+r_{11} & r_{12} & ? & \cdots \\
+r_{21} & ? & r_{23} & \cdots \\
+? & r_{32} & ? & \cdots
+\end{bmatrix}
+\]
+
+Các ô dấu hỏi là những rating chưa biết. Mục tiêu của SVD/matrix factorization là xấp xỉ ma trận rating \(R\) bằng tích của hai ma trận có số chiều thấp hơn:
+
+\[
+R \approx P Q^T
+\]
+
+Trong đó:
+
+\begin{itemize}
+    \item \(P\): ma trận đặc trưng ẩn của người dùng.
+    \item \(Q\): ma trận đặc trưng ẩn của phim.
+    \item Mỗi dòng của \(P\) là vector ẩn của một user.
+    \item Mỗi dòng của \(Q\) là vector ẩn của một movie.
+\end{itemize}
+
+Trong bản cài đặt thủ công, rating dự đoán được tính theo công thức:
+
+\[
+\hat{r}_{ui} = \mu + b_u + b_i + q_i^T p_u
+\]
+
+Trong đó:
+
+\begin{itemize}
+    \item \(\mu\): rating trung bình toàn bộ dữ liệu.
+    \item \(b_u\): độ lệch rating của user \(u\).
+    \item \(b_i\): độ lệch rating của phim \(i\).
+    \item \(p_u\): vector đặc trưng ẩn của user.
+    \item \(q_i\): vector đặc trưng ẩn của phim.
+    \item \(q_i^T p_u\): tích vô hướng thể hiện mức độ phù hợp giữa user và phim.
+\end{itemize}
+
+Sai số dự đoán:
+
+\[
+e_{ui} = r_{ui} - \hat{r}_{ui}
+\]
+
+Các tham số được cập nhật bằng stochastic gradient descent:
+
+\[
+b_u \leftarrow b_u + \alpha(e_{ui} - \lambda b_u)
+\]
+
+\[
+b_i \leftarrow b_i + \alpha(e_{ui} - \lambda b_i)
+\]
+
+\[
+p_u \leftarrow p_u + \alpha(e_{ui}q_i - \lambda p_u)
+\]
+
+\[
+q_i \leftarrow q_i + \alpha(e_{ui}p_u - \lambda q_i)
+\]
+
+Trong đó \(\alpha\) là learning rate và \(\lambda\) là hệ số regularization giúp hạn chế overfitting.
+
+\subsection{Quy trình huấn luyện}
+
+Quy trình huấn luyện bản \texttt{ManualSVD} gồm các bước:
+
+\begin{enumerate}
+    \item Đọc dữ liệu phim và rating từ file CSV.
+    \item Kiểm tra các cột bắt buộc trong dữ liệu.
+    \item Lọc user có ít nhất 20 rating.
+    \item Chuyển dữ liệu rating thành các bộ ba \((userId, movieId, rating)\).
+    \item Chia dữ liệu thành tập train và test theo tỷ lệ 80/20.
+    \item Khởi tạo ngẫu nhiên vector ẩn cho user và movie.
+    \item Dự đoán rating, tính sai số và cập nhật tham số bằng SGD.
+    \item Đánh giá bằng RMSE và MAE.
+\end{enumerate}
+
+\section{Mã giả thuật toán}
+
+\subsection{Mã giả huấn luyện ManualSVD}
+
+\begin{algorithm}[H]
+\caption{Huấn luyện SVD thủ công bằng SGD}
+\begin{algorithmic}[1]
+\State Đọc dữ liệu \texttt{movies.csv} và \texttt{ratings.csv}
+\State Kiểm tra các cột bắt buộc: \texttt{userId}, \texttt{movieId}, \texttt{rating}
+\State Lọc bỏ các user có số lượng rating nhỏ hơn 20
+\State Chuyển dữ liệu rating thành danh sách \((u, i, r_{ui})\)
+\State Chia dữ liệu thành tập train và test theo tỷ lệ 80/20
+\State Tính rating trung bình toàn cục \(\mu\)
+\For{mỗi user \(u\) và movie \(i\) trong tập train}
+    \State Khởi tạo \(b_u = 0\), \(b_i = 0\)
+    \State Khởi tạo ngẫu nhiên vector ẩn \(p_u\), \(q_i\)
+\EndFor
+\For{epoch = 1 đến số epoch}
+    \State Xáo trộn tập train
+    \For{mỗi rating \((u, i, r_{ui})\) trong tập train}
+        \State \(\hat{r}_{ui} = \mu + b_u + b_i + q_i^T p_u\)
+        \State \(e_{ui} = r_{ui} - \hat{r}_{ui}\)
+        \State Cập nhật \(b_u\), \(b_i\) theo sai số \(e_{ui}\)
+        \State Cập nhật vector \(p_u\), \(q_i\) bằng gradient descent
+    \EndFor
+\EndFor
+\State Dự đoán rating trên tập test
+\State Tính RMSE và MAE
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Mã giả sinh gợi ý phim}
+
+\begin{algorithm}[H]
+\caption{Gợi ý phim cho người dùng}
+\begin{algorithmic}[1]
+\State Nhận đầu vào gồm \texttt{user\_id} và số lượng phim cần gợi ý \texttt{top\_n}
+\State Tải mô hình SVD đã huấn luyện
+\State Đọc dữ liệu phim và rating
+\If{người dùng có rating mới trên giao diện}
+    \State Tính trọng số thể loại phim từ các phim user đã chấm điểm cao
+    \State Loại bỏ các phim user đã rating
+    \State Tính điểm gợi ý dựa trên thể loại, rating trung bình và số lượng rating
+    \State Trả về Top-N phim có điểm cao nhất
+\ElsIf{user tồn tại trong dữ liệu MovieLens}
+    \State Lấy danh sách phim user đã rating
+    \State Loại bỏ các phim đã rating khỏi tập ứng viên
+    \For{mỗi phim trong tập ứng viên}
+        \State Dự đoán rating của user cho phim đó
+    \EndFor
+    \State Sắp xếp theo rating dự đoán giảm dần
+    \State Trả về Top-N phim
+\Else
+    \State Tính danh sách phim phổ biến theo rating trung bình và số lượng rating
+    \State Trả về Top-N phim phổ biến
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\section{Kết quả thực hiện}
+
+Project có hai nhóm kết quả. Thứ nhất là kết quả của bản SVD tự cài đặt trong \texttt{manual\_svd.py}, dùng để chứng minh thuật toán học được từ ma trận rating. Thứ hai là kết quả SVD tối ưu trong ứng dụng chính, dùng để đối chiếu với K-NN trên toàn bộ dữ liệu.
+
+Khi chạy demo bản SVD tự cài đặt trên 5,000 rating đầu tiên, chia train/test theo tỷ lệ 80/20, mô hình đạt kết quả:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lr}
+        \toprule
+        \textbf{Metric} & \textbf{Giá trị} \\
+        \midrule
+        RMSE & 0.9604 \\
+        MAE & 0.7635 \\
+        Dự đoán user 1 cho movie 318 & 4.73 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Kết quả demo SVD cài đặt thủ công trên 5,000 rating}
+\end{table}
+
+Khi chạy mô hình SVD tối ưu trong ứng dụng chính trên toàn bộ dữ liệu đã lọc, kết quả đạt được:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lr}
+        \toprule
+        \textbf{Metric} & \textbf{Giá trị} \\
+        \midrule
+        RMSE & 0.8754 \\
+        MAE & 0.6744 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Kết quả đánh giá SVD tối ưu trong ứng dụng chính}
+\end{table}
+
+Ý nghĩa kết quả:
+
+\begin{itemize}
+    \item Với bản tự cài đặt, RMSE = 0.9604 và MAE = 0.7635 cho thấy thuật toán đã học được xu hướng rating từ ma trận ban đầu, dù chưa tối ưu như thư viện.
+    \item Với bản tối ưu, RMSE = 0.8754 và MAE = 0.6744 cho thấy sai số trung bình thấp hơn khi mô hình được train trên toàn bộ dữ liệu.
+    \item Cả hai kết quả đều dưới 1 điểm rating trên thang 0.5--5.0, phù hợp với mục tiêu của một project học thuật về hệ thống gợi ý.
+\end{itemize}
+
+Ví dụ kết quả gợi ý cho user có sẵn trong dữ liệu:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{9cm}c}
+        \toprule
+        \textbf{Tên phim} & \textbf{Rating dự đoán} \\
+        \midrule
+        Dark Knight, The (2008) & 5.00 \\
+        Lord of the Rings: The Two Towers, The (2002) & 5.00 \\
+        Shawshank Redemption, The (1994) & 5.00 \\
+        Toy Story 3 (2010) & 5.00 \\
+        Snatch (2000) & 5.00 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Một số phim được hệ thống gợi ý}
+\end{table}
+
+\section{Phân tích kết quả}
+
+Các giá trị RMSE và MAE cho thấy mô hình SVD có khả năng dự đoán rating tương đối ổn định. Với bản SVD tự cài đặt, sai số cao hơn bản tối ưu vì demo chỉ sử dụng 5,000 rating mẫu, số epoch còn hạn chế và chưa có nhiều kỹ thuật tối ưu nâng cao. Tuy nhiên, kết quả này vẫn chứng minh được nguyên lý cốt lõi: từ ma trận rating thưa, thuật toán học ra vector ẩn của user và movie, sau đó dùng tích vô hướng để dự đoán các rating chưa biết.
+
+Bản SVD tối ưu dùng trong ứng dụng đạt sai số thấp hơn do được train trên toàn bộ dữ liệu và sử dụng cài đặt đã tối ưu. Do đó, trong project, \texttt{ManualSVD} có vai trò chứng minh khả năng tự cài đặt thuật toán, còn bản tối ưu được dùng để vận hành ứng dụng ổn định hơn.
+
+Các kết quả gợi ý thường ưu tiên những phim có chất lượng cao hoặc phù hợp với hành vi rating của user. Với user đã tồn tại trong dữ liệu, hệ thống dùng SVD để cá nhân hóa danh sách phim. Với user mới hoặc user chưa có nhiều dữ liệu, hệ thống dùng fallback phim phổ biến hoặc gợi ý dựa trên thể loại mà user vừa chấm điểm.
+
+Một số giới hạn của project:
+
+\begin{itemize}
+    \item Chưa đánh giá bằng các metric xếp hạng như Precision@K, Recall@K hoặc NDCG.
+    \item Dữ liệu chủ yếu gồm rating, chưa khai thác sâu timestamp, mô tả phim, diễn viên hoặc đạo diễn.
+    \item Mô hình được train offline, chưa cập nhật tức thời sau mỗi rating mới.
+    \item Bản \texttt{ManualSVD} mới phục vụ mục tiêu minh họa, chưa tối ưu hiệu năng cho dữ liệu lớn.
+\end{itemize}
+
+\section{So sánh với lý thuyết K-NN}
+
+Trong phần lý thuyết, K-NN thường được dùng cho hệ thống gợi ý theo hai hướng:
+
+\begin{itemize}
+    \item User-based K-NN: tìm các user giống user hiện tại, sau đó gợi ý phim mà các user tương tự đã đánh giá cao.
+    \item Item-based K-NN: tìm các phim giống với phim user đã thích, sau đó gợi ý các phim tương tự.
+\end{itemize}
+
+K-NN dựa trực tiếp trên độ tương đồng, ví dụ cosine similarity hoặc Pearson correlation. Công thức cosine similarity giữa hai vector \(A\) và \(B\):
+
+\[
+\text{sim}(A, B) = \frac{A \cdot B}{||A|| ||B||}
+\]
+
+So với K-NN, phương pháp SVD trong project có một số điểm khác biệt:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{4cm}p{5cm}p{5cm}}
+        \toprule
+        \textbf{Tiêu chí} & \textbf{K-NN} & \textbf{SVD trong project} \\
+        \midrule
+        Cách tiếp cận & Dựa trên độ tương đồng trực tiếp giữa user hoặc item & Học vector đặc trưng ẩn của user và movie \\
+        Khả năng tổng quát & Phụ thuộc nhiều vào dữ liệu rating trùng nhau & Tổng quát tốt hơn nhờ không gian đặc trưng ẩn \\
+        Dữ liệu thưa & Dễ bị ảnh hưởng khi ma trận rating quá thưa & Xử lý dữ liệu thưa tốt hơn trong nhiều trường hợp \\
+        Chi phí dự đoán & Cần tìm láng giềng gần nhất khi dự đoán & Sau khi train, dự đoán rating khá nhanh \\
+        Tính giải thích & Dễ giải thích vì dựa trên user/phim tương tự & Khó giải thích hơn vì đặc trưng ẩn không có ý nghĩa trực tiếp \\
+        Phù hợp với project & Phù hợp để minh họa lý thuyết độ tương đồng & Phù hợp hơn với mục tiêu dự đoán rating từ ma trận thưa \\
+        \bottomrule
+    \end{tabular}
+    \caption{So sánh K-NN và SVD trong bài toán gợi ý phim}
+\end{table}
+
+\subsection{So sánh định lượng giữa SVD và K-NN}
+
+Dự án bổ sung script \texttt{app/services/compare\_algorithms.py} để so sánh SVD tối ưu với Item-based K-NN trên cùng cách chia train/test. Kết quả thực nghiệm thu được như sau:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Thuật toán} & \textbf{RMSE} & \textbf{MAE} \\
+        \midrule
+        SVD tối ưu trong ứng dụng & 0.8754 & 0.6744 \\
+        Item-based KNNWithMeans & 0.9073 & 0.6919 \\
+        \bottomrule
+    \end{tabular}
+    \caption{So sánh kết quả SVD và K-NN trên cùng bộ dữ liệu}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=0.82\textwidth,
+            height=7cm,
+            ymin=0.60,
+            ymax=0.95,
+            ylabel={Giá trị sai số},
+            symbolic x coords={RMSE, MAE},
+            xtick=data,
+            grid=both,
+            major grid style={line width=.2pt, draw=gray!45},
+            minor grid style={line width=.1pt, draw=gray!20},
+            legend style={at={(0.5,-0.18)}, anchor=north, legend columns=2},
+            nodes near coords,
+            every node near coord/.append style={font=\small},
+            xlabel={Metric đánh giá}
+        ]
+        \addplot[
+            color=blue,
+            mark=*,
+            line width=1.2pt
+        ] coordinates {
+            (RMSE, 0.8754)
+            (MAE, 0.6744)
+        };
+        \addlegendentry{SVD}
+
+        \addplot[
+            color=red,
+            mark=square*,
+            line width=1.2pt
+        ] coordinates {
+            (RMSE, 0.9073)
+            (MAE, 0.6919)
+        };
+        \addlegendentry{K-NN}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Biểu đồ đường so sánh sai số giữa SVD và K-NN}
+\end{figure}
+
+Từ biểu đồ có thể thấy đường của SVD nằm thấp hơn K-NN ở cả hai metric RMSE và MAE. Vì RMSE và MAE càng thấp thì mô hình càng tốt, kết quả này cho thấy hướng tiếp cận SVD dự đoán rating chính xác hơn K-NN trong lần thực nghiệm này. Bản \texttt{ManualSVD} tự cài đặt có kết quả riêng ở phần trước vì được demo trên 5,000 rating mẫu; còn biểu đồ này dùng kết quả đối chiếu trên toàn bộ dữ liệu để so sánh công bằng hơn với K-NN.
+
+Nếu áp dụng K-NN vào project, hệ thống có thể tìm các phim tương tự dựa trên lịch sử rating và gợi ý những phim gần nhất với các phim user đã thích. Cách này trực quan, dễ giải thích và phù hợp với phần lý thuyết đã học. Tuy nhiên, với dữ liệu MovieLens có ma trận rating thưa, K-NN có thể gặp khó khăn khi hai user hoặc hai phim có ít rating chung.
+
+Trong khi đó, SVD học các đặc trưng ẩn từ toàn bộ ma trận rating, nhờ đó có thể dự đoán rating cho nhiều cặp user--movie chưa từng xuất hiện cùng nhau. Vì vậy, SVD phù hợp hơn với mục tiêu của project.
+
+\section{Một số đoạn code chính}
+
+\subsection{Cập nhật tham số trong ManualSVD}
+
+Đoạn code cốt lõi nằm trong file \texttt{app/services/manual\_svd.py}. Sau khi tính sai số giữa rating thật và rating dự đoán, hệ thống cập nhật bias và vector ẩn bằng gradient descent:
+
+\begin{lstlisting}[style=pythonstyle]
+def _learn_from_error(self, user_id, movie_id, error):
+    user_bias = self.user_biases[user_id]
+    movie_bias = self.movie_biases[movie_id]
+
+    self.user_biases[user_id] += self.learning_rate * (
+        error - self.regularization * user_bias
+    )
+    self.movie_biases[movie_id] += self.learning_rate * (
+        error - self.regularization * movie_bias
+    )
+
+    user_vector = self.user_factors[user_id]
+    movie_vector = self.movie_factors[movie_id]
+    old_user_vector = user_vector.copy()
+
+    for index in range(self.factors):
+        user_value = old_user_vector[index]
+        movie_value = movie_vector[index]
+
+        user_vector[index] += self.learning_rate * (
+            error * movie_value - self.regularization * user_value
+        )
+        movie_vector[index] += self.learning_rate * (
+            error * user_value - self.regularization * movie_value
+        )
+\end{lstlisting}
+
+\subsection{Dự đoán rating bằng vector ẩn}
+
+Sau khi học xong, rating được dự đoán bằng tổng của rating trung bình, bias user, bias movie và tích vô hướng giữa vector user với vector movie:
+
+\begin{lstlisting}[style=pythonstyle]
+def predict(self, user_id, movie_id):
+    user_vector = self.user_factors.get(user_id)
+    movie_vector = self.movie_factors.get(movie_id)
+    if user_vector is None or movie_vector is None:
+        return self._clip(self.global_mean)
+
+    dot_product = sum(
+        user_value * movie_value
+        for user_value, movie_value in zip(user_vector, movie_vector)
+    )
+    prediction = (
+        self.global_mean
+        + self.user_biases.get(user_id, 0.0)
+        + self.movie_biases.get(movie_id, 0.0)
+        + dot_product
+    )
+    return self._clip(prediction)
+\end{lstlisting}
+
+\section{Kết luận}
+
+Dự án đã xây dựng thành công hệ thống gợi ý phim dựa trên dữ liệu MovieLens và mô hình SVD. Điểm trọng tâm của project là phần \texttt{ManualSVD}, trong đó thuật toán được cài đặt thủ công từ ma trận rating bằng cách học bias và vector ẩn của user/movie. Hệ thống cũng có các chức năng chính như huấn luyện mô hình, đánh giá bằng RMSE/MAE, lưu mô hình, sinh danh sách phim gợi ý và cho phép người dùng tương tác thông qua giao diện web.
+
+So với K-NN đã học trong phần lý thuyết, SVD là hướng tiếp cận nâng cao hơn vì có khả năng học các đặc trưng ẩn của người dùng và phim. K-NN có ưu điểm là trực quan và dễ giải thích, nhưng thường gặp hạn chế khi dữ liệu rating quá thưa. Trong khi đó, SVD cho khả năng tổng quát tốt hơn và đạt kết quả thực nghiệm ổn định hơn trong project này. Bản SVD tự cài đặt đạt RMSE = 0.9604 và MAE = 0.7635 trên demo 5,000 rating, chứng minh thuật toán hoạt động đúng về mặt nguyên lý. Bản SVD tối ưu trong ứng dụng đạt RMSE = 0.8754 và MAE = 0.6744, thấp hơn K-NN trong phần so sánh định lượng.
+
+\end{document}
